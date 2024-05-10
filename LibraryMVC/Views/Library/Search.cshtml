@@ -1,0 +1,117 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    string title;
+}
+
+<div class="main">
+    <div class="form">
+        <h3>найти</h3>
+        <span>по названию книги: </span>
+        <input class="form-part" type="text" id="searchByTitle"><br>
+        <button onclick="GetBookByTitle()">искать</button><br>
+        <span>по имени автора: </span>
+        <input class="form-part" type="text" id="searchByAuthor"><br>
+        <button onclick="GetBooksByAuthor()">искать</button>
+    </div>
+    <div class="form">
+        <h3>подобрать</h3>
+      
+        </select><br>
+        <span>Жанр: </span>
+        <select onclick="GetGenres()" class="form-part" id="bookGenre">
+            <option value="0">все</option>
+        </select><br>
+            
+        <span>Язык: </span>
+        <select onclick="GetLanguages()" class="form-part" id="bookLanguage"> 
+            <option value="0">все</option>
+        </select><br>
+                
+        <span>Наличие: </span>
+        <select class="form-part" id="status">
+            <option value="any">все</option>
+            <option value="available">только в наличии</option>
+        </select><br>
+        <button onclick="GetBookBySelect()">подобрать</button>
+    </div>
+</div>
+
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Название</th>
+            <th>Автор</th>
+            <th>Год</th>
+            <th>Жанр</th>
+            <th>Язык</th>
+            <th>статус (<span style="color: green">в библиотеке</span>/<span style="color: brown">на руках</span>)</th>
+            <th>что делаем с книжкой?</th>
+        </tr>
+    </thead>
+    <tbody>
+      @*   <tr>
+            <td>Идиот</td>
+            <td>Достоевкий Ф.М.</td>
+            <td>1876</td>
+            <td>
+                <ul>
+                    <li>Классика</li>
+                    <li>Драма</li>
+                    <li>Исторический</li>
+                </ul>
+            </td>
+            <td>Русский</td>
+            <td><div class="mark red"></div></td>
+            <td><button>вернуть в библиотеку</button> </td>
+        </tr>
+        <tr>
+            <td>Азазель</td>
+            <td>Акунин Борис</td>
+            <td>2001</td>
+            <td>
+                <ul>
+                    <li>Детектив</li>
+                    <li>Драма</li>
+                    <li>Исторический</li>
+                </ul>
+            </td>
+            <td>Русский</td>
+            <td><div class="mark red"></div></td>
+            <td><button>вернуть в библиотеку</button> </td>
+        </tr>
+        <tr>
+            <td>Ревизор</td>
+            <td>Гоголь Н.</td>
+            <td>1836</td>
+            <td>
+                <ul>
+                    <li>Классика</li>
+                    <li>Драма</li>
+                    <li>Комедия</li>
+                </ul>
+            </td>
+            <td>Русский</td>
+            <td><div class="mark green"></div></td>
+            <td><button>выдать читателю</button>  </td>
+        </tr>
+        <tr>
+            <td>Капитанская дочка</td>
+            <td>Пушкин А.С.</td>
+            <td>1828</td>
+            <td>
+                <ul>
+                    <li>Классика</li>
+                    <li>Драма</li>
+                    <li>Исторический</li>
+                </ul>
+            </td>
+            <td>Русский</td>
+            <td><div class="mark green"></div></td>
+            <td><button>выдать читателю</button></td>
+        </tr> *@
+    </tbody>
+</table>
+

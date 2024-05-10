@@ -1,0 +1,47 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    LibraryContext context = new();
+    int days = context.lateDays;
+    ToDoWithLates toDo = context.lates;
+}
+<p>критический срок просрочки </p>
+<input type="number" value=@days  id="lateDays"> <span>(дней)</span>  @* не передаются даннные *@
+<p>что делаем с опоздунами?</p>
+
+
+
+<select id="lateReaction">
+   @*  <option value="0"> отправить смс </option>
+    <option value="1"> звонок робота </option>
+    <option value="2"> сразу казнить </option>
+    <option value="3"> обрабатывать в ручную </option> *@
+@{
+    switch (toDo)
+    {
+        case (ToDoWithLates)0:
+            <option selected value="0"> отправить смс </option>
+            <option value="1"> звонок робота </option>
+            <option value="2"> сразу казнить </option>
+            <option value="3"> обрабатывать в ручную </option>; break;
+        case (ToDoWithLates)1:
+            <option value="0"> отправить смс </option>
+            <option selected value="1"> звонок робота </option>
+            <option value="2"> сразу казнить </option>
+            <option value="3"> обрабатывать в ручную </option> ; break;
+        case (ToDoWithLates)2:
+            <option value="0"> отправить смс </option>
+            <option value="1"> звонок робота </option>
+            <option selected  value="2"> сразу казнить </option>
+            <option value="3"> обрабатывать в ручную </option>  ; break;
+        case (ToDoWithLates)3:
+            <option  value="0"> отправить смс </option>
+            <option value="1"> звонок робота </option>
+            <option value="2"> сразу казнить </option>
+            <option selected value="3"> обрабатывать в ручную </option> ; break;
+    }
+}
+</select>
+<br>
+<button onclick="PutSettings()">сохранить измениния</button>

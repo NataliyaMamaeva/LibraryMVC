@@ -1,0 +1,635 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+
+    int late = 30;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+    <link rel="stylesheet" href="~/css/site.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
+</head>
+<body>
+    <style>
+    </style>
+
+    <div class="main">
+        <div class="leftMenu ">
+            <h6 class="menuButton" id="search">Поиск</h6>
+            <h6 class="menuButton" id="redactor">Редактор</h6>
+            <h6 class="menuButton" id="journal">Журнал</h6>
+        </div>
+
+        <div id="container" class="container">
+        
+        </div>
+
+    </div>
+    <div id="popup_before" class="popup_before"> </div>
+    <div id="popup" class="form popup">  </div>
+
+    <div id="successMessage" >
+        <h5>Данные обновлены</h5>
+        <h5 id="str"></h5>
+    </div>
+    <div id="failMessage" >
+        <h5>это провал</h5>
+        <h5 id="strFail"></h5>
+    </div>
+    <script>
+
+        document.querySelector("#search").addEventListener("click", function () {
+            let menu = document.querySelectorAll(".menuButton");
+            menu.forEach(element => {      element.classList.toggle('active', false)  });
+            this.classList.add('active');
+            document.querySelector("#container").innerHTML = '';
+            document.querySelector("#container").innerHTML = ` @{ await Html.RenderPartialAsync("Search"); }  `;
+            GetReaderByName();
+        })
+
+        document.querySelector("#redactor").addEventListener("click", function () {
+            let menu = document.querySelectorAll(".menuButton");
+            menu.forEach(element => {  element.classList.toggle('active', false)  });
+            this.classList.add('active');
+            document.querySelector("#container").innerHTML = '';
+            document.querySelector("#container").innerHTML = ` @{await Html.RenderPartialAsync("Redactor"); }`;
+          })
+      
+        document.querySelector("#journal").addEventListener("click", function () {
+            let menu = document.querySelectorAll(".menuButton");
+            menu.forEach(element => { element.classList.toggle('active', false)   });
+            this.classList.add('active');
+            document.querySelector("#container").innerHTML = '';
+            document.querySelector("#container").innerHTML = ` @{  await Html.RenderPartialAsync("Journal");  }`;
+            GetJournal();
+        })
+
+       
+        async function GiveBook() {
+            let book = document.querySelector('#bookSelect').value;
+            let reader = document.querySelector('#readerSelect').value;
+            
+            const response = await fetch("GiveBook", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    readerId: reader,
+                    bookId: book, 
+                })
+            });
+            if(response.ok === true) {
+                 const log = await response.json();
+                if (log.bookTitle == null) {
+                    showFailMessage("книжка уже выдана");
+                }
+                else
+                 showSuccessMessage(log.readerName + '-' + log.bookTitle);
+            }
+            else {
+            console.log("response is not ok");
+            const error = await response.json();
+            console.log(error.message);
+            }
+        }
+
+        async function ReturnBook(id) {
+            console.log(id);
+            const response = await fetch(`ReturnBook?id=${id}`, {
+                method: "GET",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" }
+            });
+            if (response.ok === true) {
+                const log = await response.json();
+                console.log(log);
+                showSuccessMessage(log.readerName + " - " + log.bookTitle);
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+                showFailMessage(log.readerName + " - " + log.BookTitle);
+            }
+        }
+
+        async function GetReaderHistory(id) {
+            document.querySelector('#showJournal').style.visibility = 'visible';
+           
+            const response = await fetch(`GetReaderHistiry?id=${id}`, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const logs = await response.json();
+                //console.log(logs);
+                const rows = document.querySelector("tbody");
+                rows.innerHTML = '';
+                for (let log of logs) {
+                    rows.append(await CreateRowLog(log));
+                }
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+
+        }
+
+        function GivePopupReader(reader) {
+            let popup = document.querySelector("#popup");
+            popup.style.visibility = "visible";
+
+            let popup_before = document.querySelector("#popup_before");
+            popup_before.style.visibility = "visible";
+            popup_before.addEventListener("click", function ()  {
+                popup.style.visibility = "hidden";
+                popup_before.style.visibility = "hidden";
+            });
+
+            console.log("givepopup");
+            popup.innerHTML = '';
+            popup.innerHTML = `  @{   await Html.RenderPartialAsync("GivePopup");  }    `;
+
+            let readerInput = document.querySelector("#readerName");
+            let readerSelect = document.querySelector("#readerSelect");
+        
+            let readerString = reader.id + "  |  " + reader.name + "  |  " + reader.birthDate + "  |  " + reader.phone;
+            readerInput.value = readerString;
+            readerInput.setAttribute("readonly", "readonly");
+
+            let readerOption = document.createElement("option");
+            readerOption.innerText = readerString;
+            readerOption.value = reader.id;
+            readerSelect.append(readerOption);
+        }
+
+        async function CreateRowLog(log) {
+            let tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", log.id);
+
+            let td_date = document.createElement("td");
+            td_date.append(log.giveDate);
+            tr.append(td_date);
+
+            let td_Rdate = document.createElement("td");
+            if (log.returnDate == null) td_Rdate.append(" ещё не вернул ");
+            else td_Rdate.append(log.returnDate);
+            tr.append(td_Rdate);
+
+            let td_name = document.createElement("td");
+            td_name.append(log.readerName);
+            tr.append(td_name);
+
+            let td_phone = document.createElement("td");
+            let reader = await GetReaderById(log.readerId);
+            if(reader)  td_phone.append(reader.phone);
+            else   td_phone.append("нет данных");
+            tr.append(td_phone);
+
+            let td_book = document.createElement("td");
+            td_book.append(log.bookTitle);
+            tr.append(td_book);
+
+            let td_books = document.createElement("td");
+            const books = await GetReaderBooks(log.readerId);
+            if (books == null) console.log("books null");
+           // console.log("books");
+            //console.log(books);
+            let ul_books = document.createElement("ul");
+            if (books.length > 0) {
+                for (let b of books) {
+                    let li = document.createElement("li");
+                    li.innerText = b.title;
+                    ul_books.append(li);
+                }
+            }
+            td_books.append(ul_books);
+            tr.append(td_books);
+
+           
+            let td_history_btn = document.createElement("td");
+            let btn_history = document.createElement("button");
+            btn_history.append("смотреть");
+            btn_history.addEventListener("click", () => GetReaderHistory(reader.id));
+            td_history_btn.append(btn_history);
+            tr.append(td_history_btn);
+
+            let td_return = document.createElement("td");
+            let return_btn = document.createElement("button");
+            return_btn.append("вернуть");
+            return_btn.addEventListener("click", () => ReturnBook(log.bookId));
+            td_return.append(return_btn);
+            tr.append(td_return);
+            
+
+            let td_late_mark = document.createElement("td");
+            let mark = document.createElement("div");
+            mark.classList.add('mark');
+            if (log.returnDate != null)  mark.classList.add('green');
+            if (log.isLate)  mark.classList.add('red');
+
+            //mark.classList.add('red');
+            td_late_mark.append(mark);
+            tr.append(td_late_mark);
+
+            return tr;
+        }
+
+        // async function SaveChanches() {
+        //     console.log("btn_save");
+        //     const id = document.getElementById('reader_id').value;
+        //     const name = document.querySelector('#reader_name').value;
+        //     const date = document.querySelector('#reader_birth_date').value;
+        //     const phone = document.querySelector('#reader_phone').value;
+
+        //     if (id === "") { await PostReader(name, date, phone); }
+        //     else { await PutReader(id, name, date, phone); }
+        //     reset();
+        // }
+
+        async function SetReaderAction(str) {
+            let menu = document.querySelectorAll(".nav-link");
+            menu.forEach(element => {
+                element.classList.toggle('active', false)
+            });
+            let me = document.querySelectorAll(`#${str}`);
+
+            //me.classList.add("active");
+            me.classList = "act";
+            let btn = document.querySelector('#readerActionBtn');
+            switch (str) {
+                case 'addReader':
+                    btn.onclick = PostReader;
+                    document.querySelector('#searchByName').setAttribute("disabled", "disabled");
+                    document.querySelector('#searchReaderBtn').setAttribute("disabled", "disabled");
+                    document.querySelector('#readerRedactSelect').setAttribute("disabled", "disabled");
+                    document.querySelector('#reader_name').removeAttribute("disabled");
+                    document.querySelector('#reader_birth_date').removeAttribute("disabled");
+                    document.querySelector('#reader_phone').removeAttribute("disabled");         
+                    break;
+                case 'redactReader':
+                    btn.onclick = PutReader;
+                    document.querySelector('#searchByName').removeAttribute("disabled");
+                    document.querySelector('#searchReaderBtn').removeAttribute("disabled");
+                    document.querySelector('#readerRedactSelect').removeAttribute("disabled");                  
+                    break;
+                case 'deleteReader':
+                    btn.onclick = DeleteReader;
+                    document.querySelector('#searchByName').removeAttribute("disabled");
+                    document.querySelector('#searchReaderBtn').removeAttribute("disabled");
+                    document.querySelector('#readerRedactSelect').removeAttribute("disabled");
+
+                    document.querySelector('#reader_name').setAttribute("disabled", "disabled");
+                    document.querySelector('#reader_birth_date').setAttribute("disabled", "disabled");
+                    document.querySelector('#reader_phone').setAttribute("disabled", "disabled");
+                    break;
+            }
+        }
+
+        function FillFieldsReader(reader) {
+            console.log("FillFieldsReader");
+           // console.log(reader);
+            document.querySelector('#reader_name').value = reader.name;
+            document.querySelector('#reader_birth_date').value = reader.birthDate;
+            document.querySelector('#reader_phone').value = reader.phone;
+        }
+
+
+
+       async function CreateRowReader(reader) { 
+            let tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", reader.id);
+
+            let td_name = document.createElement("td");
+            td_name.append(reader.name);
+            tr.append(td_name);
+
+            let td_date = document.createElement("td");
+            td_date.append(reader.birthDate);
+            tr.append(td_date);
+
+            let td_phone = document.createElement("td");
+            td_phone.append(reader.phone);
+            tr.append(td_phone);
+
+            let td_books = document.createElement("td");
+            const books = await GetReaderBooks(reader.id);
+            if (books == null) console.log("books null");
+            // console.log("books");
+            //console.log(books);
+            let ul_books = document.createElement("ul");
+            if (books.length > 0) {
+                for (let b of books) {
+                    let li = document.createElement("li");
+                    li.innerText = b.title;
+                    ul_books.append(li);
+                }
+            }
+            td_books.append(ul_books);
+            tr.append(td_books);
+
+
+            let td_late_mark = document.createElement("td");
+            let mark = document.createElement("div");
+            mark.classList = 'mark';
+            var hasLateBooks = false;
+            for (let b of books) {
+                console.log(b);
+                if (b.isLate == true) {
+                    hasLateBooks = true; break;//изЛэйт у лога на не у книжки!!!!
+                }
+            }
+
+            if (hasLateBooks) { mark.classList.add('red') }
+            else { mark.classList.add('green') }
+            td_late_mark.append(mark);
+            tr.append(td_late_mark);
+
+
+
+            let td_history_btn = document.createElement("td");
+            let btn_history = document.createElement("button");
+            btn_history.append("смотреть");
+            btn_history.addEventListener("click", async () => await ReaderHistory(reader.id));
+            td_history_btn.append(btn_history);
+            tr.append(td_history_btn);
+
+            
+
+            let td_give_btn = document.createElement("td");
+            let btn_give = document.createElement("button");
+            btn_give.append("выдать книжку");
+            btn_give.addEventListener("click", async () => await GivePopupReader(reader));
+            td_give_btn.append(btn_give);
+            tr.append(td_give_btn);
+
+            return tr;          
+        }
+
+        async function GetReaderBooks(reader_id) {
+            const response = await fetch(`GetReaderBooks?id=${reader_id}`, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const books = await response.json();
+                //console.log(books);
+                return books;
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+                return null;
+            }
+        }
+
+        async function GetBookByTitle() {
+            let book = document.querySelector('#bookTitle').value;
+            let bookSelect = document.querySelector('#bookSelect');
+
+            document.querySelector('#bookSelect').innerHTML = '';
+                const response = await fetch(`/Library/GetBookByTitle?title=${book}`, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                if (response.ok === true) {
+                    const books = await response.json();
+                    books.forEach(b => {
+                    let bookString = b.id + "  |  " + b.title + "  |  " + b.authorName  + "  |  " + b.year;
+                        let bookOption = document.createElement("option");
+                        bookOption.innerText = bookString;
+                        bookOption.value = b.id;
+                        bookSelect.append(bookOption);
+                    });
+                }
+                else {
+                    const error = await response.json();
+                    console.log(error.message);
+                    return null;
+                }
+            }
+
+        async function GetAuthorById(id) {
+            const responseAuthor = await fetch(`/Library/GetAuthorById?id=${id}`, {/////////////////хочет где то async !
+                method: "GET", headers: { "Accept": "application/json" }
+            });
+            if (responseAuthor.ok === true) {
+                let author = await responseAuthor.json();
+                return author;
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+                return null;
+            }
+        }
+
+        async function PostReader () {
+            let reader_name = document.querySelector('#reader_name').value;
+            let reader_birth_date = document.querySelector('#reader_birth_date').value;
+            let reader_phone = document.querySelector('#reader_phone').value;
+            const response = await fetch("PostReader", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    Name: reader_name,
+                    BirthDate: reader_birth_date,
+                    Phone: reader_phone
+                })
+            });
+            if (response.ok === true) {
+                const reader = await response.json();
+                console.log(reader);
+                showSuccessMessage(reader.name);
+            }
+            else {
+                console.log("response is not ok");
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        async function PutReader (){
+            let id = document.querySelector('#readerRedactSelect').value;
+            let name = document.querySelector('#reader_name').value;
+            let date = document.querySelector('#reader_birth_date').value;
+            let phone = document.querySelector('#reader_phone').value;
+
+            const response = await fetch("PutReader", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    Id: id,
+                    Name: name,
+                    BirthDate: date,
+                    Phone: phone
+                })
+            });
+            if (response.ok === true) {
+                const reader = await response.json();
+                console.log(reader);
+                showSuccessMessage(reader.name);             
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        async function GetReaderRedactByName(){
+            let name = document.querySelector('#searchByName').value;
+            let select = document.querySelector('#readerRedactSelect');
+            const response = await fetch(`GetReaderByName?name=${name}`, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const readers = await response.json();
+
+                console.log(readers);               
+                for (let r of readers) {
+                    select.innerHTML = '';
+                    let str = r.id + "  |  " + r.name + "  |  " + r.birthDate + "  |  " + r.phone;
+                    let option = document.createElement("option");
+                    option.innerText = str;
+                    option.value = r.id;
+                    select.append(option);
+                    option.addEventListener("click", FillFieldsReader(r));
+                }
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        async function DeleteReader(){
+            let id = document.querySelector('#readerRedactSelect').value;
+            const response = await fetch(`DeleteReader?id=${id}`, {
+                method: "Delete",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" }   
+            });
+            if (response.ok === true) {
+                //const reader = await response.json();
+                //console.log(reader);
+                if (response)
+                    showSuccessMessage('читатель удалён');
+                else
+                    showFailMessage("не удалён");
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+                showFailMessage(error.message);
+            }
+        }
+
+        async function GetReaderByName() {
+            document.querySelector('tbody').innerHTML = '';
+            let name = document.querySelector('#readerName').value;
+            const response = await fetch(`GetReaderByName?name=${name}`, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const readers = await response.json();
+                console.log(readers);
+                const rows = document.querySelector("tbody");
+                for (let reader of readers) {
+                    rows.append(await CreateRowReader(reader));/// не дожидается ответа теперь 
+                }
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        async function GetReaderById(id) {
+            const response = await fetch(`GetReaderById?id=${id}`, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const reader = await response.json();
+                //console.log(reader);
+                return reader;
+                //const rows = document.querySelector("tbody");
+                //readers.forEach(reader => rows.append(createRow(reader)));
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+                return null;
+            }
+        }
+
+        async function GetJournal(){
+            const response = await fetch(`GetJournal`, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                let logs = await response.json();
+                let sortType = document.querySelector('#filter').value;
+     
+                switch (sortType) {
+                    case 'SortGiveDate': logs.sort((a, b) => Date.parse(a.giveDate) - Date.parse(b.giveDate)); break;
+                    case 'SortReturnDate': logs.sort((a, b) => Date.parse(a.returnDate) - Date.parse(b.returnDate)); break;
+                    case 'SortLate': logs = logs.filter(l => l.isLate == true); break;
+                    case 'SortName': logs.sort((a, b) => a.readerName.localeCompare(b.readerName)); break;
+                }
+
+                //console.log(logs);
+                document.querySelector('#showJournal').style.visibility = 'hidden';
+                const rows = document.querySelector("tbody");
+                rows.innerHTML = '';
+                for (let log of logs) {
+                    rows.append(await CreateRowLog(log));
+                }
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        function reset() {
+            document.querySelector('#reader_id').value = '';
+            document.querySelector('#reader_name').value = '';
+            document.querySelector('#reader_birth_date').value = '';
+            document.querySelector('#reader_phone').value = '';
+        }
+
+
+        function showSuccessMessage(str) {
+            var successMessage = document.getElementById("successMessage");
+            successMessage.style.visibility = "visible";
+            let p = document.getElementById('str');
+            p.innerHTML = '';
+            p.innerText ='[' + str + ']';
+            setTimeout(function () {
+                successMessage.style.visibility = "hidden";
+            }, 3000); // Закрыть сообщение через 3 секунды (3000 миллисекунд)
+        }
+
+
+        function showFailMessage(str) {
+            var successMessage = document.getElementById("failMessage");
+            successMessage.style.visibility = "visible";
+            let p = document.getElementById('strFail');
+            p.innerHTML = '';
+            p.innerText = '[' + str + ']';
+            setTimeout(function () {
+                successMessage.style.visibility = "hidden";
+            }, 3000); // Закрыть сообщение через 3 секунды (3000 миллисекунд)
+        }
+
+    
+    </script>
+</body>
+</html>

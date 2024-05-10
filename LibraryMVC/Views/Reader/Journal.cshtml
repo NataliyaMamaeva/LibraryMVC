@@ -1,0 +1,90 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<div class="form">
+    <span>Фильтр: </span>
+    <select onchange="GetJournal()" class="form-part" name="genre" id="filter">
+        <option value="SortGiveDate"> по дате выдачи </option>
+        <option value="SortReturnDate"> по дате возврата </option>
+        <option value="SortLate"> только просроченные </option>
+        <option value="SortName"> по имени читателя </option>
+    </select><br>
+    <button onclick="GetJournal()" id="showJournal" style="visibility:hidden"> Показать весь журнал </button>
+</div>
+
+
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>дата выдачи</th>
+            <th>дата возврата</th>
+            <th>Кому</th>
+            <th>Телефон</th>
+            <th>книжка</th>
+            <th>Все книжи на руках на руках</th>
+            <th>посмотреть историю</th>
+            <th>вернуть книжку</th>
+            <th><span style="color: green">возвращено</span>/<span style="color: brown">просрочено</span></th>
+        </tr>
+    </thead>
+    <tbody>
+       @*  <tr>
+
+            <td> 25.04.2024  </td>
+            <td>Иванов Иван Иванович</td>
+            <td>+7 916 999 88 77</td>
+            <td>Воспоминания Никулин</td>
+            <td>
+                <ul>
+                    <li>Идиот Достоевский Ф. М.</li>
+                    <li>Капитаская дочка Пушкин А. С.</li>
+                    <li>Азазель Акунин Б.</li>
+                </ul>
+            </td>
+            <td><button>смотреть</button></td>
+            <td><div class="mark red"></div></td>
+        </tr>
+        <tr>
+            <td>21.04.2024</td>
+            <td>Иванов Иван Иванович</td>
+            <td>+7 916 999 88 77</td>
+            <td>Купчихи, магнатки, предпренимательницы 19 века Ульянова Г.</td>
+            <td>
+                <ul>
+                    <li>Идиот Достоевский Ф. М.</li>
+                </ul>
+            </td>
+            <td><button>смотреть</button></td>
+            <td><div class=""></div></td>
+        </tr>
+        <tr>
+            <td>20.04.2024</td>
+            <td>Иванов Иван Иванович</td>
+            <td>+7 916 999 88 77</td>
+            <td>Идиот Достоевский Ф. М.</td>
+            <td>
+                <ul>
+                </ul>
+            </td>
+            <td><button>смотреть</button></td>
+            <td><div class="mark green"></div></td>
+        </tr>
+        <tr>
+            <td>20.04.2024</td>
+            <td>Иванов Иван Иванович</td>
+            <td>+7 916 999 88 77</td>
+            <td>Идиот Достоевский Ф. М.</td>
+            <td>
+                <ul>
+                    <li>Капитаская дочка Пушкин А. С.</li>
+                    <li>Азазель Акунин Б.</li>
+                </ul>
+            </td>
+            <td><button>смотреть</button></td>
+            <td><div class="mark green"></div></td>
+        </tr> *@
+    </tbody>
+</table>

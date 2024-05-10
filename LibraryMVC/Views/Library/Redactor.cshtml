@@ -1,0 +1,112 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{    
+ //   var authorName = Request.Form["authorAuthorName"]; // Получаем значение из инпута
+}
+
+
+    <div class="form">
+        <h3>Автор</h3>
+
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+            <button onclick="SetAuthorAction('addAuthor')"  id="addAuthor" class="nav-link active"> Добавить </button>
+            </li>
+            <li class="nav-item">
+            <button onclick="SetAuthorAction('redactAuthor')" id="redactAuthor" class="nav-link active"> Редактировать </button>
+            </li>   
+        </ul>
+
+
+        <span>Искать автора по имени для редактирования: </span>
+        <input class="form-part" type="text" name="" id="authorAuthorName">
+    <button id="searchAuthorBtn" onclick="GetAuthorByName('authorAuthorName', 'authorRedactSelect')">искать</button>
+    <select class="form-part" name="" id="authorRedactSelect">
+           
+        </select><br>
+
+        <span> Имя автора : </span>
+        <input class="form-part" type="text" name="" id="authorName"><br>
+        <span>Год рождения: </span>
+        <input class="form-part" type="number" name="" id="authorBirthDate"><br>
+        <span>Страна проживания: </span>
+        <input class="form-part" type="text" name="" id="country"><br>
+        <button id="authorAction">сохранить изменения</button>
+    </div><br />
+
+
+    <div class="form">
+        <h3>Книга</h3>
+       @*  <span>Выбери, если нужно редактировать: </span>
+        <select class="form-part" name="language" id="bookSelect">
+            <option value="any">-</option>
+            <option value="russian">Достоевский Ф.М.</option>
+            <option value="english">Достоевский Ф.М.</option>
+        </select><br> *@
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <button onclick="SetBookAction('addBook')" id="addBook" class="nav-link active"> Добавить </button>
+        </li>
+        <li class="nav-item">
+            <button onclick="SetBookAction('redactBook')" id="redactBook" class="nav-link active"> Редактировать </button>
+        </li>
+        <li class="nav-item">
+            <button onclick="SetBookAction('deleteBook')" id="deleteBook" class="nav-link active"> Удалить </button>
+        </li>
+    </ul>
+
+        <span>Искать книгу по названию для редактирования/удаления: </span>
+        <input class="form-part" type="text" id="searchByTitle"><br>
+        <button id="searchBookBtn" onclick="GetBookByTitleRedact()">искать</button><br>
+        <select  class="form-part" name="language" id="bookSelect">
+        </select><br>
+
+        <span>Название: </span>
+        <input class="form-part" type="text" name="" id="title"><br>
+        <span>Год написания: </span>
+        <input class="form-part" type="text" name="" id="year"><br>
+        <span>Имя автора: </span>
+        <input class="form-part" type="text" name="" id="bookAuthorName">
+        <button onclick="GetAuthorByName('bookAuthorName','bookAuthorSelect')">искать</button>
+
+        <select class="form-part" name="language" id="bookAuthorSelect">
+        </select><br>
+        <span>Язык: </span>
+    <select onclick="GetLanguages()" class="form-part" name="" id="bookLanguage">
+          
+        </select><br>
+        <span>Жанр: </span>
+        <select onclick="GetGenres()" class="form-part" name="genre" id="bookGenre">
+          
+        </select><br>
+            <button id="bookAction">сохранить изменения</button>
+    </div><br />
+
+
+    <div class="form">
+        <h3>Язык</h3>
+      @*  <span>Выбери, если нужно редактировать: </span>
+        <select onclick="GetLanguages()" class="form-part" name="language" id="">
+            <option value="any">Русский</option>
+            <option value="russian">Английский</option>
+            <option value="english">Турецкий</option>
+        </select><br>  *@
+        <span>Дбоавить новый язык: </span>
+        <input class="form-part" type="text" name="" id="language"><br>
+        <button onclick="PostLanguage()">сохранить изменения</button>
+    </div><br />
+
+
+    <div class="form">
+        <h3>Жанр</h3>
+        @* <span>Выбери, если нужно редактировать: </span>
+        <select class="form-part" name="language" id="languageSelect">
+            <option value="any">нон-фикшн</option>
+            <option value="russian">Английский</option>
+            <option value="english">Турецкий</option>
+        </select><br> *@
+        <span>Добавить новый жанр: </span>
+        <input class="form-part" type="text" name="" id="genre"><br>
+        <button onclick="PostGenre()">сохранить изменения</button>
+    </div><br />

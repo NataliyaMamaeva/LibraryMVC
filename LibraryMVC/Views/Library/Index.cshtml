@@ -1,0 +1,793 @@
+﻿@{
+    ViewData["Title"] = "Library";
+}
+
+@* <div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+ *@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+    <link rel="stylesheet" href="~/css/site.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="main">
+        <div class="leftMenu">
+            <h6 class="menuButton" id="search">Поиск/подбор</h6>
+            <h6 class="menuButton" id="redactor">Редактор</h6>
+            <h6 class="menuButton" id="settings">Настройки</h6>
+        </div>
+
+        <div id="container" class="container">
+        </div>
+        <div id="popup_before" class="popup_before"> </div>
+        <div id="popup" class="form popup"></div>
+        <div id="successMessage">
+            <h5>Успешно</h5>
+            <h5 id="str"></h5>
+        </div>
+        <div id="failMessage">
+            <h5>это провал</h5>
+            <h5 id="strFail"></h5>
+        </div>
+        <script>
+
+            document.querySelector("#search").addEventListener("click", function () {
+                let menu = document.querySelectorAll(".menuButton");
+                menu.forEach(element => {
+                    element.classList.toggle('active', false)
+                });
+                this.classList.add('active');
+                document.querySelector("#container").innerHTML = '';
+                document.querySelector("#container").innerHTML = ` @{ await Html.RenderPartialAsync("Search");  }`;
+                GetBookByTitle();
+            });
+
+            document.querySelector("#redactor").addEventListener("click", function () {
+                let menu = document.querySelectorAll(".menuButton");
+                menu.forEach(element => {
+                    element.classList.toggle('active', false)
+                });
+                this.classList.add('active');
+                document.querySelector("#container").innerHTML = '';
+                document.querySelector("#container").innerHTML = ` @{ Html.RenderPartialAsync("Redactor");}`;
+
+            });
+ 
+            document.querySelector("#settings").addEventListener("click", function () {
+            let menu = document.querySelectorAll(".menuButton");
+            menu.forEach(element => {
+            element.classList.toggle('active', false)
+            });
+            this.classList.add('active');
+            document.querySelector("#container").innerHTML = '';
+            document.querySelector("#container").innerHTML = `@{  Html.RenderPartialAsync("Settings");  } `; 
+            });         
+
+            async function CreateRowBook(book) {
+                console.log(book);
+                let tr = document.createElement("tr");
+                tr.setAttribute("data-rowid", book.id);
+
+                let td_title = document.createElement("td");
+                td_title.append(book.title);
+                tr.append(td_title);
+
+                let td_author = document.createElement("td");
+                td_author.append(book.authorName);
+                tr.append(td_author);
+
+                let td_year = document.createElement("td");
+                td_year.append(book.year);
+                tr.append(td_year);
+
+                let td_genre = document.createElement("td");
+                let genre = await GetGenreById(book.genreId);
+                //console.log(genre);
+                td_genre.append(genre.genre);
+                tr.append(td_genre);
+
+                let td_lang = document.createElement("td");
+                let lang = await GetLanguageById(book.languageId);
+                //console.log(lang);
+                td_lang.append(lang.language);
+                tr.append(td_lang);
+
+                let td_status_mark = document.createElement("td");
+                let mark = document.createElement("div");
+                mark.classList = 'mark';
+                if (book.readerId != null) { mark.classList.add('red'); }
+                else { mark.classList.add('green'); }
+                td_status_mark.append(mark);
+                tr.append(td_status_mark);
+
+                let td_btn = document.createElement("td");
+                let btn = document.createElement("button");
+                if (book.readerId != null) {
+                    btn.append("вернуть книжку");
+                    btn.addEventListener("click", async () => await ReturnBook(book.id));
+                }
+                else {
+                    btn.append("выдать книжку");
+                    btn.addEventListener("click", async () => await GivePopupBook(book));
+                }   
+                td_btn.append(btn);
+                tr.append(td_btn);
+
+                return tr;
+            }
+
+            function GivePopupBook(book) {
+                let popup = document.querySelector("#popup");
+                popup.style.visibility = "visible";
+
+                let popup_before = document.querySelector("#popup_before");
+                popup_before.style.visibility = "visible";
+                popup_before.addEventListener("click", function () {
+                    popup.style.visibility = "hidden";
+                    popup_before.style.visibility = "hidden";
+                });
+
+                console.log("givepopup");
+                popup.innerHTML = '';
+                popup.innerHTML = `  @{  await Html.RenderPartialAsync("GivePopup"); }    `;
+
+                let bookInput = document.querySelector("#bookTitle");
+                let bookSelect = document.querySelector("#bookSelect");
+
+                let bookString = book.id + "  |  " + book.title + "  |  " + book.authorName + "  |  " + book.year;
+                bookInput.value = bookString;
+                bookInput.setAttribute("readonly", "readonly");
+
+                let option = document.createElement("option");
+                option.innerText = bookString;
+                option.value = book.id;
+                bookSelect.append(option);
+            }
+
+            async function GetReaderByName() {
+                document.querySelector('tbody').innerHTML = '';
+                let name = document.querySelector('#readerName').value;               
+                let readerSelect = document.querySelector("#readerSelect");
+                const response = await fetch(`/Reader/GetReaderByName?name=${name}`, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                if (response.ok === true) {
+                    const readers = await response.json();
+                    console.log(readers);
+                    // const rows = document.querySelector("tbody");
+                    // for (let reader of readers) {
+                    //     rows.append(await CreateRowReader(reader));/// не дожидается ответа теперь
+                    // }
+                    readers.forEach(reader => {
+                        console.log(reader);
+                        let readerString = reader.id + "  |  " + reader.name + "  |  " + reader.birthDate + "  |  " + reader.phone;
+                        let option = document.createElement("option");
+                        option.innerText = readerString;
+                        option.value = reader.id;
+                        readerSelect.append(option);
+                    });
+                }
+                else {
+                    const error = await response.json();
+                    console.log(error.message);
+                }
+            }
+
+            async function GiveBook() {
+                let book = document.querySelector('#bookSelect').value;
+                let reader = document.querySelector('#readerSelect').value;
+
+                const response = await fetch("/Reader/GiveBook", {
+                    method: "POST",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        readerId: reader,
+                        bookId: book,
+                    })
+                });
+                if (response.ok === true) {
+                    const log = await response.json();
+                    if (log == null) {
+                        showFailMessage("книжка уже выдана");
+                    }
+                    else
+                        showSuccessMessage(log.readerName + '-' + log.bookTitle);
+                }
+                else {
+                    console.log("response is not ok");
+                    const error = await response.json();
+                    console.log(error.message);
+                }
+            }
+
+            async function ReturnBook(id) {
+                const response = await fetch(`/Reader/ReturnBook?id=${id}`, {
+                    method: "PUT",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        Id: id,
+                    })
+                });
+                if (response.ok === true) {
+                    const log = await response.json();
+                    console.log(log);
+                    showSuccessMessage(log.readerName + " - " + log.bookTitle);
+                }
+                else {
+                    const error = await response.json();
+                    console.log(error.message);
+                    showFailMessage(log.readerName + " - " + log.BookTitle);
+                }
+            }
+
+            async function GetAuthorByName(inputId, selectId) {
+                const select = document.querySelector(`#${selectId}`);
+                let name = document.querySelector(`#${inputId}`).value;
+                console.log(inputId);
+                console.log(name);
+
+                const response = await fetch(`/Library/GetAuthorByName?name=${name}`, {
+                        method: "GET",
+                        headers: { "Accept": "application/json" }
+                        });
+                        if (response.ok === true) {
+                            const authors = await response.json();
+                            select.innerHTML = '';
+                            authors.forEach(a => {
+                                console.log(a);
+                                let authorString = a.id + "  |  " + a.name + "  |  " + a.dateOfBirth;
+                                let option = document.createElement("option");
+                                option.innerText = authorString;
+                                option.value = a.id;
+                                option.addEventListener("click", FillFieldsAuthor(a));
+                                select.append(option);
+                            });
+                        }
+                    else {
+                        const error = await response.json();
+                        console.log(error.message);
+                        return null;
+                    }
+            }
+
+            async function GetBookByTitle() {
+                let book = document.querySelector('#searchByTitle').value;
+                
+                document.querySelector('tbody').innerHTML = '';
+                const response = await fetch(`/Library/GetBookByTitle?title=${book}`, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                if (response.ok === true) {
+                    const books = await response.json();
+                   // console.log(books);
+                    const rows = document.querySelector("tbody");
+                    for (let book of books) {
+                        rows.append(await CreateRowBook(book));
+                    }    
+                }
+                else {
+                    const error = await response.json();
+                    console.log(error.message);
+                    showFailMessage(error.message);
+                    return null;
+                }
+            }
+
+            async function GetBookByTitleRedact() {
+                let book = document.querySelector('#searchByTitle').value;
+                let select = document.querySelector('#bookSelect');
+                const response = await fetch(`/Library/GetBookByTitle?title=${book}`, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                if (response.ok === true) {
+                    const books = await response.json();
+                    //console.log(books);  
+                    for (let b of books) {
+                        select.innerHTML = '';
+                        let bookString = b.id + "  |  " + b.title + "  |  " + b.authorName + "  |  " + b.year;
+                        let bookOption = document.createElement("option");
+                        bookOption.innerText = bookString;
+                        bookOption.value = b.id;
+                        select.append(bookOption);
+                        bookOption.addEventListener("click", FillFieldsBook(b));
+                    }
+                }
+                else {
+                    const error = await response.json();
+                    console.log(error.message);
+                    showFailMessage(error.message);
+                    return null;
+                }
+            }
+
+            async function GetGenres() {
+                const select = document.querySelector("#bookGenre");
+                select.onclick = '';
+               
+                const response = await fetch(`/Library/GetGenres`, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                if (response.ok === true) {
+                    const genres = await response.json();
+                    genres.forEach(g => {
+                        let authorString = g.id + "  |  " + g.genre;
+                        let option = document.createElement("option");
+                        option.innerText = authorString;
+                        option.value = g.id;
+                        select.append(option);
+                    });
+                }
+                else {
+                    const error = await response.json();
+                    console.log(error.message);
+                    return null;
+                }
+            }
+
+            async function GetGenreById(id) {     
+                const response = await fetch(`/Library/GetGenreById?id=${id}`, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                if (response.ok === true) {
+                    const genre = await response.json();
+                    return genre;
+                }
+                else {
+                    const error = await response.json();
+                    console.log(error.message);
+                    return null;
+                }
+            }
+
+            async function GetLanguageById(id) {
+                const response = await fetch(`/Library/GetLanguageById?id=${id}`, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                if (response.ok === true) {
+                    const lang = await response.json();
+                    return lang;
+                }
+                else {
+                    const error = await response.json();
+                    console.log(error.message);
+                    return null;
+                }
+            }
+
+            async function GetBooksByAuthor() {
+                let authorName = document.querySelector('#searchByAuthor').value;
+
+                document.querySelector('tbody').innerHTML = '';
+                const response = await fetch(`/Library/GetBookByAuthor?authorName=${authorName}`, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                if (response.ok === true) {
+                    const books = await response.json();
+                   // console.log(books);
+                    const rows = document.querySelector("tbody");
+                    for (let book of books) {
+                        rows.append(await CreateRowBook(book));
+                    }
+                }
+                else {
+                    const error = await response.json();
+                    console.log(error.message);
+                    showFailMessage(error.message);
+                    return null;
+                }
+            }
+
+            async function GetLanguages() {
+                const select = document.querySelector("#bookLanguage");
+                //select.innerHTML = '';
+                select.onclick = '';
+                const response = await fetch(`/Library/GetLanguages`, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                if (response.ok === true) {
+                    const Languages = await response.json();
+                    Languages.forEach(l => {
+                        let langString = l.id + "  |  " + l.language;
+                       // console.log(langString);
+                        let option = document.createElement("option");
+                        option.innerText = langString;
+                        option.value = l.id;
+                        select.append(option);
+                    });
+                }
+                else {
+                    const error = await response.json();
+                    console.log(error.message);
+                    return null;
+                }
+            }
+
+            async function DeleteBook() {
+                let id = document.querySelector('#bookSelect').value;
+                const response = await fetch(`/Library/DeleteBook?id=${id}`, {
+                    method: "DELETE",
+                    headers: { "Accept": "application/json" }
+                });
+                if (response.ok === true) {
+                    if (response) showSuccessMessage("книжка удалена");
+                }
+                else {
+                    const error = await response.json();
+                    console.log(error.message);
+                }
+            }
+
+            function SetAuthorAction(str) {
+                let menu = document.querySelectorAll(".nav-link");
+                menu.forEach(element => {
+                    element.classList.toggle('active', false)
+                });
+                let me = document.querySelectorAll(`#${str}`);
+                me.classList = "act";
+                let btn = document.querySelector('#authorAction');
+                switch (str) {
+                    case 'addAuthor':
+                        btn.onclick = PostAuthor;
+                        document.querySelector('#authorAuthorName').setAttribute("disabled", "disabled");
+                        document.querySelector('#searchAuthorBtn').setAttribute("disabled", "disabled");
+                        document.querySelector('#authorRedactSelect').setAttribute("disabled", "disabled");
+                        break;
+                    case 'redactAuthor':
+                        btn.onclick = PutAuthor;
+                        document.querySelector('#authorAuthorName').removeAttribute("disabled");
+                        document.querySelector('#searchAuthorBtn').removeAttribute("disabled");
+                        document.querySelector('#authorRedactSelect').removeAttribute("disabled");
+                        break;
+                   
+                } 
+            }
+
+            async function SetBookAction(str) {
+                let menu = document.querySelectorAll(".nav-link");
+                menu.forEach(element => {
+                    element.classList.toggle('active', false)
+                });
+                let me = document.querySelectorAll(`#${str}`);
+
+                //me.classList.add("active");
+                me.classList = "act";
+                let btn = document.querySelector('#bookAction');
+                switch (str) {
+                    case 'addBook': 
+                        btn.onclick = PostBook;
+                        document.querySelector('#searchByTitle').setAttribute("disabled", "disabled");
+                        document.querySelector('#searchBookBtn').setAttribute("disabled", "disabled");
+                        document.querySelector('#bookSelect').setAttribute("disabled", "disabled");
+                        document.querySelector('#title').removeAttribute("disabled");
+                        document.querySelector('#bookLanguage').removeAttribute("disabled");
+                        document.querySelector('#bookGenre').removeAttribute("disabled");
+                        document.querySelector('#bookAuthorSelect').removeAttribute("disabled");
+                        document.querySelector('#bookAuthorName').removeAttribute("disabled");
+                        document.querySelector('#year').removeAttribute("disabled");
+                        break;
+                   case 'redactBook': 
+                        btn.onclick = PutBook;
+                        document.querySelector('#searchByTitle').removeAttribute("disabled");
+                        document.querySelector('#searchBookBtn').removeAttribute("disabled");
+                        document.querySelector('#bookSelect').removeAttribute("disabled");
+                        break;
+                    case 'deleteBook':
+                        btn.onclick = DeleteBook;
+                        document.querySelector('#searchByTitle').removeAttribute("disabled");
+                        document.querySelector('#searchBookBtn').removeAttribute("disabled");
+                        document.querySelector('#bookSelect').removeAttribute("disabled");
+                        document.querySelector('#title').setAttribute("disabled", "disabled");
+                        document.querySelector('#bookLanguage').setAttribute("disabled", "disabled");
+                        document.querySelector('#bookGenre').setAttribute("disabled", "disabled");
+                        document.querySelector('#bookAuthorSelect').setAttribute("disabled", "disabled");
+                        document.querySelector('#bookAuthorName').setAttribute("disabled", "disabled");
+                        document.querySelector('#year').setAttribute("disabled", "disabled");
+                        break;
+                }
+            }
+
+
+            async function PostGenre() {
+                let genre = document.querySelector('#genre').value;
+                document.querySelector('#genre').value = '';
+                const response = await fetch("/Library/PostGenre", {
+                    method: "POST",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({ genre: genre,   })
+                });
+                if (response.ok === true) {
+                    const genre = await response.json();
+                    //console.log(genre);
+                    showSuccessMessage(genre.genre);
+                }
+                else {
+                    console.log("response is not ok");
+                    const error = await response.json();
+                    console.log(error.message);
+                }
+            }
+
+            async function PostLanguage() {
+                let language = document.querySelector('#language').value;
+                document.querySelector('#language').value = '';
+                const response = await fetch("/Library/PostLanguage", {
+                    method: "POST",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        language: language,
+                    })
+                });
+                if (response.ok === true) {
+                    const language = await response.json();
+                    //console.log(language);
+                    showSuccessMessage(language.language);
+                }
+                else {
+                    console.log("response is not ok");
+                    const error = await response.json();
+                    console.log(error.message);
+                }
+            }
+
+            async function PostBook() {
+                let title = document.querySelector('#title').value;
+                let languageId = document.querySelector('#bookLanguage').value;
+                let genreId = document.querySelector('#bookGenre').value;
+                let authorId = document.querySelector('#bookAuthorSelect').value;
+                let year = document.querySelector('#year').value;
+
+                document.querySelector('#title').value = '';
+                document.querySelector('#bookLanguage').value = '';
+                document.querySelector('#bookGenre').value = '';
+                document.querySelector('#bookAuthorSelect').value = '';
+                document.querySelector('#bookAuthorName').value = '';
+                document.querySelector('#year').value = '';
+                //clearInput();
+                const response = await fetch("/library/PostBook", {
+                    method: "POST",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title: title,
+                        languageId: languageId,
+                        genreId: genreId,
+                        authorId: authorId,
+                        year: year
+
+                    })
+                });
+                if (response.ok === true) {
+                    const book = await response.json();
+                    showSuccessMessage(book.title);
+                    //console.log(book);
+                }
+                else {
+                    console.log("response is not ok");
+                    const error = await response.json();
+                    console.log(error.message);
+                }
+            }
+
+           async function PostAuthor() {
+                let name = document.querySelector('#authorName').value;
+                let birth = document.querySelector('#authorBirthDate').value;
+                let country = document.querySelector('#country').value;
+               
+               document.querySelector('#authorName').value = '';
+               document.querySelector('#authorBirthDate').value = '';
+               document.querySelector('#country').value = '';
+
+                const response = await fetch("/Library/PostAuthor", {
+                    method: "POST",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: name,
+                        birthDate: birth,
+                        country: country
+                    })
+                });
+                if (response.ok === true) {
+                    const author = await response.json();
+                    if (author.name == null)
+                        showFailMessage("такой автор уже есть!");
+                    else
+                        showSuccessMessage(author.name);
+                }
+                else {
+                    console.log("response is not ok");
+                    const error = await response.json();
+                    console.log(error.message);
+                }
+            }
+
+            async function PutBook() {
+                let id = document.querySelector('#bookSelect').value;
+                let title = document.querySelector('#title').value;
+                let languageId = document.querySelector('#bookLanguage').value;
+                let genreId = document.querySelector('#bookGenre').value;
+                let authorId = document.querySelector('#bookAuthorSelect').value;
+                let year = document.querySelector('#year').value;
+
+                document.querySelector('#title').value = '';
+                document.querySelector('#bookLanguage').value = '';
+                document.querySelector('#bookGenre').value = '';
+                document.querySelector('#bookAuthorSelect').value = '';
+                document.querySelector('#bookAuthorName').value = '';
+                document.querySelector('#year').value = '';
+
+                const response = await fetch("/library/PutBook", {
+                    method: "PUT",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: id,
+                        title: title,
+                        languageId: languageId,
+                        genreId: genreId,
+                        authorId: authorId,
+                        year: year
+                    })
+                });
+                if (response.ok === true) {
+                    const book = await response.json();
+                    // console.log(author);
+                    showSuccessMessage(book.title);
+                }
+                else {
+                    console.log("response is not ok");
+                    const error = await response.json();
+                    console.log(error.message);
+                    showFailMessage(error.message);
+                }
+            }
+
+            function FillFieldsBook(book){
+                console.log("FillFieldsBook");
+                console.log(book);
+                document.querySelector('#title').value = book.title;
+                document.querySelector('#bookLanguage').value = book.language;
+                document.querySelector('#bookGenre').value = book.genre;
+                document.querySelector('#bookAuthorSelect').value = book.authorId;
+                document.querySelector('#bookAuthorName').value = book.authorName;
+                document.querySelector('#year').value = book.year;
+            }
+
+            function FillFieldsAuthor(author) {
+                console.log("FillFieldsAuthor");
+                console.log(author);
+                document.querySelector('#authorName').value = author.name;
+                document.querySelector('#authorBirthDate').value = author.dateOfBirth;
+                document.querySelector('#country').value = author.country;
+            }
+
+            async function PutAuthor() {
+                let name = document.querySelector('#authorName').value;
+                let birth = document.querySelector('#authorBirthDate').value;
+                let country = document.querySelector('#country').value;
+                let id = document.querySelector('#authorRedactSelect').value;
+
+                document.querySelector('#authorName').value = '';
+                document.querySelector('#authorBirthDate').value = '';
+                document.querySelector('#country').value = '';
+
+                const response = await fetch("/Library/PutAuthor", {
+                    method: "PUT",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: id,
+                        name: name,
+                        birthDate: birth,
+                        country: country
+                    })
+                });
+                if (response.ok === true) {
+                    const author = await response.json();
+                    // console.log(author);
+                    showSuccessMessage(author.name);
+                }
+                else {
+                    console.log("response is not ok");
+                    const error = await response.json();
+                    console.log(error.message);
+                    showFailMessage(error.message);
+                }
+            }
+
+            function clearInput() {
+                let inputs = document.getElementsByTagName('input');
+                inputs.forEach(i => i.value = '');
+            }
+
+            function showSuccessMessage(str) {
+                var successMessage = document.getElementById("successMessage");
+                successMessage.style.visibility = "visible";
+                let p = document.getElementById('str');
+                p.innerHTML = '';
+                p.innerText = '[' + str + ']';
+                setTimeout(function () {
+                    successMessage.style.visibility = "hidden";
+                }, 3000); 
+            }
+
+            function showFailMessage(str) {
+                var successMessage = document.getElementById("failMessage");
+                successMessage.style.visibility = "visible";
+                let p = document.getElementById('strFail');
+                p.innerHTML = '';
+                p.innerText = '[' + str + ']';
+                console.log(str);
+                setTimeout(function () {
+                    successMessage.style.visibility = "hidden";
+                }, 3000); 
+            }
+
+            async function PutSettings() {
+                let days = document.querySelector('#lateDays').value;
+                let late = document.querySelector('#lateReaction').value;
+               
+
+                const response = await fetch("/Library/PutSettings", {
+                    method: "PUT",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        days: days,
+                        lateReaction: late
+                    })
+                });
+                if (response.ok === true) {
+                    const set = await response.json();
+                    showSuccessMessage("установлено " + set.days + " дней и " + set.lateReaction + " действие");
+                }
+                else {
+                    console.log("response is not ok");
+                    const error = await response.json();
+                    console.log(error.message);
+                    showFailMessage(error.message);
+                }
+            }
+
+            async function GetBookBySelect(){
+
+                let genre = document.querySelector('#bookGenre').value;
+                let language = document.querySelector('#bookLanguage').value;
+                let status = document.querySelector('#status').value;
+
+                document.querySelector('tbody').innerHTML = '';
+                const response = await fetch(`/Library/GetBookBySelect?genre=${genre}&language=${language}&status=${status}`, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                if (response.ok === true) {
+                    const books = await response.json();
+                    //console.log(books);
+                    const rows = document.querySelector("tbody");
+                    for (let book of books) {
+                        rows.append(await CreateRowBook(book));
+                    }
+                }
+                else {
+                    const error = await response.json();
+                    console.log(error.message);
+                    showFailMessage(error.message);
+                    return null;
+                }
+            }
+           
+
+        </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<div class="main">
+    <div class="form">
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <button onclick="SetReaderAction('addReader')" value="addAuthor" class="nav-link active"> Добавить </button>
+            </li>
+            <li class="nav-item">
+                <button onclick="SetReaderAction('redactReader')" value="addAuthor" class="nav-link active"> Редактировать </button>
+            </li>
+            <li class="nav-item">
+                <button onclick="SetReaderAction('deleteReader')" value="addAuthor" class="nav-link active"> Удалить </button>
+            </li>
+        </ul>
+        <span>Искать читателя по имени для редактирования/удаления: </span>
+        <input class="form-part" type="text" name="" id="searchByName">
+        <button id="searchReaderBtn" onclick="GetReaderRedactByName()">искать</button>
+        <select class="form-part" name="" id="readerRedactSelect">
+        </select><br>
+        
+        <span>Имя читателя: </span>
+        <input class="form-part" type="text" name="" id="reader_name"><br>
+        <span>Дата рожения (год-месяц-дата): </span>
+        <input class="form-part" type="text" name="" id="reader_birth_date"><br>
+        <span>Номер телефона: </span>
+        <input class="form-part" type="text" name="" id="reader_phone"><br>
+
+        <button id="readerActionBtn">сохранить изменения</button>
+    </div>
+
+     
+
